@@ -196,7 +196,19 @@ To use this workflow, you need to set up the following secrets in your GitHub re
 
 ### Setting Up GitHub Actions
 
-The workflow is already configured in `.github/workflows/ci-cd.yml`. When you push to GitHub, it will automatically run.
+Two GitHub Actions workflows are configured for this project:
+
+1. **CI/CD Pipeline** (`.github/workflows/ci-cd.yml`):
+   - Runs automatically on push to main branch and pull requests
+   - Handles testing, building, and production deployment
+
+2. **Test Deployment** (`.github/workflows/test-deployment.yml`):
+   - Runs automatically on pull requests
+   - Can be manually triggered via GitHub Actions interface
+   - Creates an isolated test environment using Docker
+   - Deploys the application to the test environment
+   - Runs validation tests against the deployed application
+   - Automatically cleans up all resources after testing
 
 ## Security Best Practices
 
