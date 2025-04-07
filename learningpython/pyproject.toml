@@ -1,0 +1,58 @@
+[tool.poetry]
+name = "learningpython"
+version = "0.1.0"
+description = "A simple Python project demonstrating basic calculator operations with unit tests"
+authors = ["Gautam Pachnanda <pachnanda.gautam@gmail.com>"]
+readme = "README.md"
+packages = [{include = "org"}]
+
+[tool.poetry.dependencies]
+python = "^3.9"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.3.5"
+coverage = "^7.5.3"
+pytest-cov = "^4.1.0"
+black = "^24.3.0"
+flake8 = "^7.0.0"
+isort = "^5.13.2"
+flake8-black = "^0.3.6"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.pytest.ini_options]
+testpaths = ["org"]
+python_files = "test_*.py"
+python_classes = "Test*"
+python_functions = "test_*"
+addopts = "-v --cov=org --cov-report=term-missing --cov-fail-under=90"
+
+[tool.black]
+line-length = 88
+target-version = ['py39']
+include = '\.pyi?$'
+
+[tool.isort]
+profile = "black"
+multi_line_output = 3
+
+[tool.coverage.run]
+source = ["org"]
+omit = [
+    "*/__init__.py", 
+    "*/test/*",
+    "*/calculator_demo.py"
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "pass",
+    "raise ImportError"
+]
+fail_under = 90

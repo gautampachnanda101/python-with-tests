@@ -1,5 +1,7 @@
 import unittest
-from learningpython.org.pachnanda.learning.calculator import Calculator
+
+from org.pachnanda.learning.calculator import Calculator
+
 
 class TestCalculator(unittest.TestCase):
 
@@ -28,5 +30,6 @@ class TestCalculator(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.calc.divide(1, 0)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()

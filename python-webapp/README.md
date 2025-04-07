@@ -159,6 +159,45 @@ If the application can't connect to the database:
    ```
 3. Verify the DB_URL environment variable is correctly set
 
+## CI/CD Pipeline
+
+This project includes a GitHub Actions workflow for continuous integration and continuous deployment. The workflow automatically runs on push to the main branch and on pull requests.
+
+### CI/CD Pipeline Steps
+
+1. **Test**:
+   - Linting with Flake8
+   - Code formatting check with Black
+   - Import sorting check with isort
+   - Tests with pytest and coverage reporting
+   - Uses a PostgreSQL service container for integration tests
+
+2. **Build and Push** (only on push to main):
+   - Builds a Docker image
+   - Pushes the image to Docker Hub
+   - Tags with both latest and commit SHA
+   - Uses Docker layer caching for faster builds
+
+3. **Deploy** (only on push to main):
+   - Connects to deployment server via SSH
+   - Pulls the latest Docker image
+   - Updates the running containers with zero downtime
+   - Cleans up unused Docker resources
+
+### Required Secrets
+
+To use this workflow, you need to set up the following secrets in your GitHub repository:
+
+- `DOCKERHUB_USERNAME`: Your Docker Hub username
+- `DOCKERHUB_TOKEN`: Your Docker Hub access token
+- `DEPLOY_SERVER_HOST`: The hostname or IP of your deployment server
+- `DEPLOY_SERVER_USER`: SSH username for the deployment server
+- `DEPLOY_SERVER_KEY`: SSH private key for authentication
+
+### Setting Up GitHub Actions
+
+The workflow is already configured in `.github/workflows/ci-cd.yml`. When you push to GitHub, it will automatically run.
+
 ## Security Best Practices
 
 ### Environment Variables
