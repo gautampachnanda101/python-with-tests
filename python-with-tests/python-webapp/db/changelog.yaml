@@ -1,0 +1,56 @@
+databaseChangeLog:
+  - changeSet:
+      id: 1
+      author: author
+      changes:
+        - createTable:
+            tableName: messages
+            columns:
+              - column:
+                  name: id
+                  type: serial
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: message
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+  - changeSet:
+      id: 2
+      author: author
+      changes:
+        - insert:
+            tableName: messages
+            columns:
+              - column:
+                  name: message
+                  value: "Hello, World!"
+              - column:
+                  name: message
+                  value: "Welcome to FastAPI!"
+              - column:
+                  name: message
+                  value: "FastAPI is awesome!"
+              - column:
+                  name: message
+                  value: "Enjoy coding with FastAPI!"
+              - column:
+                  name: message
+                  value: "FastAPI makes building APIs fun!"
+              - column:
+                  name: message
+                  value: "Happy coding with FastAPI!"
+              - column:
+                  name: message
+                  value: "FastAPI is fast and easy to use!"
+              - column:
+                  name: message
+                  value: "Build great APIs with FastAPI!"
+              - column:
+                  name: message
+                  value: "FastAPI is the future of web development!"
+              - column:
+                  name: message
+                  value: "FastAPI: Fast, modern, and easy to use!"
