@@ -1,0 +1,102 @@
+name: Learning Python CI/CD
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'learningpython/**'
+      - '.github/workflows/python-reusable.yml'
+      - '.github/workflows/learningpython-workflow.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'learningpython/**'
+      - '.github/workflows/python-reusable.yml'
+      - '.github/workflows/learningpython-workflow.yml'
+  workflow_dispatch:
+
+jobs:
+  call-reusable-workflow:
+    uses: ./.github/workflows/python-reusable.yml
+    with:
+      project_path: 'learningpython'
+      python_version: '3.9'
+      use_poetry: true
+      use_docker: false
+      needs_postgres: false
+      coverage_threshold: 90
+      artifact_name: 'learningpython-dist'
+      artifact_path: 'dist'
+    secrets:
+      registry_username: ''
+      registry_password: ''
+  
+  publish:
+    needs: call-reusable-workflow
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Download build artifacts
+      uses: actions/download-artifact@v3
+      with:
+        name: learningpython-dist
+        path: dist
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+    
+    - name: Install twine
+      run: pip install twine
+    
+    - name: Publish to Test PyPI
+      env:
+        TWINE_USERNAME: ${{ secrets.TEST_PYPI_USERNAME }}
+        TWINE_PASSWORD: ${{ secrets.TEST_PYPI_PASSWORD }}
+      run: |
+        echo "Publishing to Test PyPI"
+        # Uncomment the following line to actually publish
+        # twine upload --repository-url https://test.pypi.org/legacy/ dist/*
+        echo "Package would be published to Test PyPI"
+    
+  deploy-docs:
+    needs: call-reusable-workflow
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+    
+    - name: Install dependencies
+      working-directory: ./learningpython
+      run: |
+        python -m pip install --upgrade pip
+        pip install poetry
+        poetry install
+        pip install mkdocs mkdocs-material
+    
+    - name: Build documentation
+      working-directory: ./learningpython
+      run: |
+        mkdir -p docs
+        echo "# API Documentation" > docs/index.md
+        echo "This documentation is automatically generated from the codebase." >> docs/index.md
+        echo "## Calculator Module" >> docs/index.md
+        echo '```python' >> docs/index.md
+        cat org/pachnanda/learning/calculator.py >> docs/index.md
+        echo '```' >> docs/index.md
+        mkdocs build
+    
+    - name: Deploy documentation
+      run: |
+        echo "Documentation would be deployed here"
+        # In a real scenario, you would deploy to GitHub Pages or another hosting service
