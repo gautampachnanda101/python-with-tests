@@ -1,0 +1,138 @@
+name: Python Web App CI/CD
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'python-webapp/**'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'python-webapp/**'
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:13
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: testdb
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+    
+    - name: Install dependencies
+      working-directory: ./python-webapp
+      run: |
+        python -m pip install --upgrade pip
+        pip install poetry
+        poetry config virtualenvs.create false
+        poetry install
+    
+    - name: Lint with flake8
+      working-directory: ./python-webapp
+      run: |
+        # stop the build if there are Python syntax errors or undefined names
+        poetry run flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+        # exit-zero treats all errors as warnings
+        poetry run flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+    
+    - name: Test with pytest
+      working-directory: ./python-webapp
+      run: |
+        poetry run pytest
+      env:
+        DB_URL: postgresql://postgres:postgres@localhost:5432/testdb
+    
+    - name: Upload test results
+      uses: actions/upload-artifact@v3
+      with:
+        name: pytest-results
+        path: python-webapp/report.html
+        if-no-files-found: ignore
+
+  build:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
+    
+    - name: Login to GitHub Container Registry
+      uses: docker/login-action@v2
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Build and push
+      uses: docker/build-push-action@v4
+      with:
+        context: ./python-webapp
+        push: true
+        tags: |
+          ghcr.io/${{ github.repository_owner }}/python-webapp:latest
+          ghcr.io/${{ github.repository_owner }}/python-webapp:${{ github.sha }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+  deploy-staging:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    environment: staging
+    
+    steps:
+    - name: Deploy to staging
+      run: |
+        echo "Deploying to staging environment"
+        # In a real scenario, you would add deployment steps here
+        # For example, using SSH to connect to a staging server and pull the latest image
+        echo "Deployed to staging at $(date)"
+    
+    - name: Verify deployment
+      run: |
+        echo "Verifying deployment to staging"
+        # Add verification steps like health checks
+        echo "Deployment verified at $(date)"
+
+  deploy-production:
+    needs: deploy-staging
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    environment: production
+    
+    steps:
+    - name: Deploy to production
+      run: |
+        echo "Deploying to production environment"
+        # In a real scenario, you would add deployment steps here
+        # For example, using SSH to connect to a production server and pull the latest image
+        echo "Deployed to production at $(date)"
+    
+    - name: Verify deployment
+      run: |
+        echo "Verifying deployment to production"
+        # Add verification steps like health checks
+        echo "Deployment verified at $(date)"
