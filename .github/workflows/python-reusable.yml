@@ -139,11 +139,19 @@ jobs:
       env:
         DB_URL: ${{ inputs.needs_postgres && 'postgresql://postgres:postgres@localhost:5432/testdb' || '' }}
 
-    - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v3
+    - name: Upload coverage report
+      uses: actions/upload-artifact@v3
       with:
-        file: ${{ inputs.project_path }}/coverage.xml
-        fail_ci_if_error: true
+        name: coverage-report
+        path: ${{ inputs.project_path }}/coverage.xml
+        if-no-files-found: warn
+
+    # Optional: Only enable this if you have a Codecov account set up
+    # - name: Upload coverage to Codecov
+    #   uses: codecov/codecov-action@v3
+    #   with:
+    #     file: ${{ inputs.project_path }}/coverage.xml
+    #     fail_ci_if_error: false
 
     - name: Generate test summary
       if: always()
