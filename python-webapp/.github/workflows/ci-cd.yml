@@ -62,7 +62,7 @@ jobs:
         DB_URL: postgresql://postgres:postgres@localhost:5432/testdb
 
     - name: Upload test results
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: pytest-results
         path: python-webapp/report.html
