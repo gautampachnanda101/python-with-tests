@@ -27,9 +27,6 @@ jobs:
       coverage_threshold: 80
       artifact_name: 'python-webapp-artifacts'
       artifact_path: 'app'
-    secrets:
-      registry_username: ${{ secrets.GITHUB_TOKEN }}
-      registry_password: ${{ secrets.GITHUB_TOKEN }}
   
   deploy-staging:
     needs: call-reusable-workflow

@@ -27,9 +27,6 @@ jobs:
       coverage_threshold: 90
       artifact_name: 'learningpython-dist'
       artifact_path: 'dist'
-    secrets:
-      registry_username: ''
-      registry_password: ''
   
   publish:
     needs: call-reusable-workflow
