@@ -1,5 +1,7 @@
 name: Reusable Python Workflow
-
+permissions:
+  issues: write
+  pull-requests: write
 on:
   workflow_call:
     inputs:
