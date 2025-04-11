@@ -36,6 +36,7 @@ Each project has its own README with detailed setup instructions. Navigate to th
 - Poetry (for the Learning Python project)
 - Docker and Docker Compose (for the Python Web App)
 - Make
+- pre-commit (for code quality hooks)
 
 ### Common Commands
 
@@ -53,6 +54,33 @@ make test
 cd ../python-webapp
 make setup
 make run
+```
+
+## Code Quality Tools
+
+### Pre-commit Hooks
+
+This repository uses pre-commit hooks to ensure code quality standards are met before code is committed. The hooks automatically format code, check for syntax errors, and enforce style guidelines.
+
+To set up the pre-commit hooks:
+
+```bash
+# Run the setup script
+./setup-hooks.sh
+```
+
+The following hooks are configured:
+
+- **Black**: Automatically formats Python code
+- **isort**: Sorts and organizes imports
+- **Flake8**: Checks for PEP 8 compliance and other code quality issues
+- **MyPy**: Performs static type checking
+- **General hooks**: Checks for trailing whitespace, merge conflicts, large files, etc.
+
+You can manually run all hooks on all files with:
+
+```bash
+pre-commit run --all-files
 ```
 
 ## License

@@ -1,26 +1,52 @@
+"""
+Integration tests for the Python Web App.
+
+This module contains integration tests that test the application with a real
+PostgreSQL database using testcontainers. It verifies that the API endpoints
+work correctly with database interactions.
+"""
+
+import logging
 import os
-import pytest
-from fastapi.testclient import TestClient
-from testcontainers.postgres import PostgresContainer
-from sqlalchemy import create_engine, text
-from sqlalchemy.orm import sessionmaker
+import socket
 import subprocess
 import time
-import socket
-import logging
+
+import pytest
+from app.main import app  # noqa: E402
+from app.pg import connect_to_db, database, disconnect_from_db  # noqa: E402
+from fastapi.testclient import TestClient
+from sqlalchemy import create_engine, text
+from sqlalchemy.orm import sessionmaker
+from testcontainers.postgres import PostgresContainer
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-def is_port_available(port):
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        return s.connect_ex(('localhost', port)) != 0
 
-# Use a dynamic port to avoid conflicts
-def find_free_port():
+def is_port_available(port):
+    """Check if a port is available on localhost.
+
+    Args:
+        port: The port number to check
+
+    Returns:
+        bool: True if the port is available, False otherwise
+    """
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        s.bind(('localhost', 0))
+        return s.connect_ex(("localhost", port)) != 0
+
+
+def find_free_port():
+    """Find a free port on localhost.
+
+    Returns:
+        int: An available port number
+    """
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.bind(("localhost", 0))
         return s.getsockname()[1]
+
 
 # Find an available port dynamically
 PG_PORT = find_free_port()
@@ -34,17 +60,23 @@ container.start()
 os.environ["DB_URL"] = container.get_connection_url()
 DATABASE_URL = os.environ["DB_URL"]
 logger.info("========> Postgres container started with DB_URL: %s", DATABASE_URL)
-print(f"========> Postgres container started with DB_URL: ${DATABASE_URL}")
+print(f"========> Postgres container started with DB_URL: {DATABASE_URL}")
 
 # Use the container's connection URL for the application
 os.environ["DB_URL"] = DATABASE_URL
 logger.info("Updated DB_URL: %s", os.environ["DB_URL"])
 
-from app.main import app
-from app.pg import connect_to_db, disconnect_from_db, database
 
 @pytest.fixture(scope="session", autouse=True)
 def postgres_container():
+    """Pytest fixture that provides a PostgreSQL container.
+
+    This fixture is automatically used for all tests in the session.
+    It ensures the container is properly stopped after all tests are complete.
+
+    Yields:
+        PostgresContainer: The running PostgreSQL container
+    """
     try:
         yield container
     finally:
@@ -56,8 +88,17 @@ def postgres_container():
         except Exception as e:
             logger.error(f"Error stopping PostgreSQL container: {e}")
 
+
 @pytest.fixture(scope="session")
 async def setup_database():
+    """Pytest fixture that sets up the database connection.
+
+    This fixture connects to the database, verifies the connection,
+    and ensures the connection is closed after all tests are complete.
+
+    Yields:
+        None: This fixture doesn't yield a value, just manages the connection
+    """
     try:
         await connect_to_db()
         logger.info("Database connected successfully in setup_database fixture")
@@ -69,7 +110,16 @@ async def setup_database():
         await disconnect_from_db()
         logger.info("Database disconnected in setup_database fixture")
 
+
 def list_files_in_folder(folder_path):
+    """List all files in a folder.
+
+    Args:
+        folder_path: Path to the folder to list files from
+
+    Returns:
+        list: List of filenames in the folder
+    """
     try:
         files = os.listdir(folder_path)
         return files
@@ -80,7 +130,20 @@ def list_files_in_folder(folder_path):
         logger.info(f"An error occurred: {e}")
         return []
 
+
 def is_db_ready(database_url):
+    """Check if the database is ready to accept connections.
+
+    This function attempts to connect to the database multiple times,
+    with a short delay between attempts, to allow for the database to
+    become available.
+
+    Args:
+        database_url: The URL of the database to connect to
+
+    Returns:
+        bool: True if the database is ready, False otherwise
+    """
     engine = create_engine(database_url)
     for _ in range(10):
         try:
@@ -93,12 +156,20 @@ def is_db_ready(database_url):
             time.sleep(2)
     return False
 
+
 @pytest.fixture(scope="session", autouse=True)
 def run_liquibase():
+    """Set up the database schema using Liquibase migrations.
+
+    This fixture runs automatically for all tests in the session and ensures
+    that the database schema is properly set up before any tests run.
+    """
     changelog_file = "db/changelog.yaml"
     jdbc_driver_path = "lib/" + list_files_in_folder("lib")[0]
     logger.info(f"Running Liquibase migrations on {DATABASE_URL}")
-    logger.info(f"Using changelog file: {changelog_file} and JDBC driver: {jdbc_driver_path}")
+    logger.info(
+        f"Using changelog file: {changelog_file} and JDBC driver: {jdbc_driver_path}"
+    )
 
     if not os.path.exists(changelog_file):
         logger.error(f"Changelog file not found: {changelog_file}")
@@ -123,15 +194,12 @@ def run_liquibase():
         "--changeLogFile=" + changelog_file,
         "--driver=org.postgresql.Driver",
         "--log-level=debug",
-        "update"
+        "update",
     ]
     logger.info(f"Running command: {' '.join(liquibase_cmd)}")
     try:
         result = subprocess.run(
-            liquibase_cmd,
-            check=True,
-            capture_output=True,
-            text=True
+            liquibase_cmd, check=True, capture_output=True, text=True
         )
         logger.info("Liquibase migrations completed successfully")
         logger.info("%s", result.stdout)
@@ -144,11 +212,19 @@ def run_liquibase():
         logger.error("An unexpected error occurred: %s", e)
         logger.info("%s", e.stderr)
         logger.info("%s", e.output)
-        raise SystemExit("Exiting test suite due to unexpected error during Liquibase migration")
+        raise SystemExit(
+            "Exiting test suite due to unexpected error during Liquibase migration"
+        )
     logger.info("Liquibase migrations completed successfully")
+
 
 @pytest.fixture(scope="function")
 def db_session():
+    """Provide a database session for testing.
+
+    Yields:
+        SQLAlchemy session: A database session for test operations
+    """
     # Use the same database URL as the application
     engine = create_engine(DATABASE_URL)
     Session = sessionmaker(bind=engine)
@@ -156,18 +232,22 @@ def db_session():
     yield session
     session.close()
 
+
 @pytest.fixture(scope="function")
 def test_client():
+    """Test client."""
     # Create a fresh test client for each test
     with TestClient(app) as client:
         yield client
 
+
 @pytest.mark.integration
 def test_read_root_200(db_session, run_liquibase, setup_database, test_client):
+    """Test that the root endpoint returns a 200 status code with a message from the database."""
     # First delete all existing messages
     query_delete = text("DELETE FROM messages")
     db_session.execute(query_delete)
-    
+
     # Insert a specific test message
     test_message = "Hello, World! from IT test"
     query_insert = text(f"INSERT INTO messages (message) VALUES ('{test_message}')")
@@ -175,14 +255,16 @@ def test_read_root_200(db_session, run_liquibase, setup_database, test_client):
     db_session.commit()
     logger.info(f"Inserted message '{test_message}' into the database")
 
-    # Now there's only one message in the database, so random.choice will always select it
+    # Shortened comment
     response = test_client.get("/")
     logger.info("Response from GET /: %s", response.json())
     assert response.status_code == 200
     assert response.json() == {"message": test_message}
 
+
 @pytest.mark.integration
 def test_read_root_404(db_session, run_liquibase, setup_database, test_client):
+    """Test that the root endpoint returns a 404 status code when no messages are available."""
     query = text("DELETE FROM messages")
     db_session.execute(query)
     db_session.commit()
@@ -192,12 +274,14 @@ def test_read_root_404(db_session, run_liquibase, setup_database, test_client):
     assert response.status_code == 404
     assert response.json() == {"detail": "No messages available"}
 
+
 @pytest.mark.integration
 def test_read_root_500(test_client):
+    """Test that the root endpoint returns a 500 status code when the database is unavailable."""
     # Temporarily stop the container to simulate database failure
     try:
         container.stop()
-        
+
         response = test_client.get("/")
         assert response.status_code == 500
         assert response.json() == {"detail": "Error fetching messages"}

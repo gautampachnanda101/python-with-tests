@@ -41,7 +41,7 @@ multi_line_output = 3
 [tool.coverage.run]
 source = ["org"]
 omit = [
-    "*/__init__.py", 
+    "*/__init__.py",
     "*/test/*",
     "*/calculator_demo.py"
 ]

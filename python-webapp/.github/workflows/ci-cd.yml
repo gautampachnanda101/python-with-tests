@@ -14,7 +14,7 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-    
+
     services:
       postgres:
         image: postgres:13
@@ -32,12 +32,12 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
-    
+
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
         python-version: '3.9'
-    
+
     - name: Install dependencies
       working-directory: ./python-webapp
       run: |
@@ -45,7 +45,7 @@ jobs:
         pip install poetry
         poetry config virtualenvs.create false
         poetry install
-    
+
     - name: Lint with flake8
       working-directory: ./python-webapp
       run: |
@@ -53,16 +53,16 @@ jobs:
         poetry run flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
         # exit-zero treats all errors as warnings
         poetry run flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
-    
+
     - name: Test with pytest
       working-directory: ./python-webapp
       run: |
         poetry run pytest
       env:
         DB_URL: postgresql://postgres:postgres@localhost:5432/testdb
-    
+
     - name: Upload test results
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: pytest-results
         path: python-webapp/report.html
@@ -72,20 +72,20 @@ jobs:
     needs: test
     runs-on: ubuntu-latest
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
-    
+
     steps:
     - uses: actions/checkout@v3
-    
+
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v2
-    
+
     - name: Login to GitHub Container Registry
       uses: docker/login-action@v2
       with:
         registry: ghcr.io
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
-    
+
     - name: Build and push
       uses: docker/build-push-action@v4
       with:
@@ -102,7 +102,7 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     environment: staging
-    
+
     steps:
     - name: Deploy to staging
       run: |
@@ -110,7 +110,7 @@ jobs:
         # In a real scenario, you would add deployment steps here
         # For example, using SSH to connect to a staging server and pull the latest image
         echo "Deployed to staging at $(date)"
-    
+
     - name: Verify deployment
       run: |
         echo "Verifying deployment to staging"
@@ -122,7 +122,7 @@ jobs:
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     environment: production
-    
+
     steps:
     - name: Deploy to production
       run: |
@@ -130,7 +130,7 @@ jobs:
         # In a real scenario, you would add deployment steps here
         # For example, using SSH to connect to a production server and pull the latest image
         echo "Deployed to production at $(date)"
-    
+
     - name: Verify deployment
       run: |
         echo "Verifying deployment to production"
