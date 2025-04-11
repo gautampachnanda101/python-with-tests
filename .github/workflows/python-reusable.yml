@@ -187,6 +187,7 @@ jobs:
 
           *Workflow run: [${{ github.workflow }} #${{ github.run_number }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})*
         edit-mode: replace
+        token: ${{ secrets.PAT_TOKEN }
 
   build:
     needs: test
