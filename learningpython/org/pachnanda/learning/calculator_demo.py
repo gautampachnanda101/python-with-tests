@@ -1,16 +1,13 @@
 #!/usr/bin/env python3
-"""
-Demo script for the Calculator class.
-Run this script to see the Calculator in action.
-"""
+# learningpython/org/pachnanda/learning/calculator_demo.py
+
+"""Demo script for demonstrating the Calculator class."""
 
 from org.pachnanda.learning.calculator import Calculator
 
 
 def main():
-    """
-    Main function to demonstrate the Calculator class.
-    """
+    """Demonstrate the functionality of the Calculator class."""
     print("Calculator Demo")
     print("--------------")
 

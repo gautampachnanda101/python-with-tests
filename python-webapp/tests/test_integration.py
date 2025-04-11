@@ -1,4 +1,5 @@
-"""Integration tests for the Python Web App.
+"""
+Integration tests for the Python Web App.
 
 This module contains integration tests that test the application with a real
 PostgreSQL database using testcontainers. It verifies that the API endpoints
@@ -276,6 +277,7 @@ def test_read_root_404(db_session, run_liquibase, setup_database, test_client):
 
 @pytest.mark.integration
 def test_read_root_500(test_client):
+    """Test that the root endpoint returns a 500 status code when the database is unavailable."""
     # Temporarily stop the container to simulate database failure
     try:
         container.stop()
