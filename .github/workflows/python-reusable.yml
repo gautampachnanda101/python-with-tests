@@ -2,6 +2,8 @@ name: Reusable Python Workflow
 permissions:
   issues: write
   pull-requests: write
+  packages: write  # Add this line for ghcr.io access
+  contents: read
 on:
   workflow_call:
     inputs:
