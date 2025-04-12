@@ -1,5 +1,9 @@
 name: Learning Python CI/CD
-
+permissions:
+  contents: read
+  packages: write
+  issues: write
+  pull-requests: write
 on:
   push:
     branches: [ main ]
@@ -27,32 +31,29 @@ jobs:
       coverage_threshold: 90
       artifact_name: 'learningpython-dist'
       artifact_path: 'dist'
-    secrets:
-      registry_username: ''
-      registry_password: ''
-  
+
   publish:
     needs: call-reusable-workflow
     runs-on: ubuntu-latest
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
-    
+
     steps:
     - uses: actions/checkout@v3
-    
+
     - name: Download build artifacts
       uses: actions/download-artifact@v3
       with:
         name: learningpython-dist
         path: dist
-    
+
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
         python-version: '3.9'
-    
+
     - name: Install twine
       run: pip install twine
-    
+
     - name: Publish to Test PyPI
       env:
         TWINE_USERNAME: ${{ secrets.TEST_PYPI_USERNAME }}
@@ -62,20 +63,20 @@ jobs:
         # Uncomment the following line to actually publish
         # twine upload --repository-url https://test.pypi.org/legacy/ dist/*
         echo "Package would be published to Test PyPI"
-    
+
   deploy-docs:
     needs: call-reusable-workflow
     runs-on: ubuntu-latest
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
-    
+
     steps:
     - uses: actions/checkout@v3
-    
+
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
         python-version: '3.9'
-    
+
     - name: Install dependencies
       working-directory: ./learningpython
       run: |
@@ -83,7 +84,7 @@ jobs:
         pip install poetry
         poetry install
         pip install mkdocs mkdocs-material
-    
+
     - name: Build documentation
       working-directory: ./learningpython
       run: |
@@ -95,7 +96,7 @@ jobs:
         cat org/pachnanda/learning/calculator.py >> docs/index.md
         echo '```' >> docs/index.md
         mkdocs build
-    
+
     - name: Deploy documentation
       run: |
         echo "Documentation would be deployed here"

@@ -20,17 +20,17 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
-    
+
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v4
       with:
         python-version: ${{ matrix.python-version }}
-    
+
     - name: Install Poetry
       run: |
         curl -sSL https://install.python-poetry.org | python3 -
         echo "$HOME/.poetry/bin" >> $GITHUB_PATH
-    
+
     - name: Cache Poetry dependencies
       uses: actions/cache@v3
       with:
@@ -38,27 +38,27 @@ jobs:
         key: ${{ runner.os }}-poetry-${{ hashFiles('**/poetry.lock') }}
         restore-keys: |
           ${{ runner.os }}-poetry-
-    
+
     - name: Install dependencies
       working-directory: ./learningpython
       run: poetry install
-    
+
     - name: Lint with flake8
       working-directory: ./learningpython
       run: poetry run flake8 .
-    
+
     - name: Check formatting with black
       working-directory: ./learningpython
       run: poetry run black --check .
-    
+
     - name: Check import sorting with isort
       working-directory: ./learningpython
       run: poetry run isort --check .
-    
+
     - name: Test with pytest and coverage
       working-directory: ./learningpython
       run: poetry run pytest --cov=org --cov-report=xml --cov-fail-under=90
-    
+
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v3
       with:
@@ -70,49 +70,49 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
-    
+
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
         python-version: '3.9'
-    
+
     - name: Install Poetry
       run: |
         curl -sSL https://install.python-poetry.org | python3 -
         echo "$HOME/.poetry/bin" >> $GITHUB_PATH
-    
+
     - name: Build package
       working-directory: ./learningpython
       run: poetry build
-    
+
     - name: Archive production artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: dist
         path: learningpython/dist/
-        
+
   publish:
     needs: build
     runs-on: ubuntu-latest
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
-    
+
     steps:
     - uses: actions/checkout@v3
-    
+
     - name: Download build artifacts
       uses: actions/download-artifact@v3
       with:
         name: dist
         path: dist
-    
+
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
         python-version: '3.9'
-    
+
     - name: Install twine
       run: pip install twine
-    
+
     - name: Publish to Test PyPI
       env:
         TWINE_USERNAME: ${{ secrets.TEST_PYPI_USERNAME }}
@@ -122,20 +122,20 @@ jobs:
         # Uncomment the following line to actually publish
         # twine upload --repository-url https://test.pypi.org/legacy/ dist/*
         echo "Package would be published to Test PyPI"
-    
+
   deploy-docs:
     needs: test
     runs-on: ubuntu-latest
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
-    
+
     steps:
     - uses: actions/checkout@v3
-    
+
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
         python-version: '3.9'
-    
+
     - name: Install dependencies
       working-directory: ./learningpython
       run: |
@@ -143,7 +143,7 @@ jobs:
         pip install poetry
         poetry install
         pip install mkdocs mkdocs-material
-    
+
     - name: Build documentation
       working-directory: ./learningpython
       run: |
@@ -155,7 +155,7 @@ jobs:
         cat org/pachnanda/learning/calculator.py >> docs/index.md
         echo '```' >> docs/index.md
         mkdocs build
-    
+
     - name: Deploy documentation
       run: |
         echo "Documentation would be deployed here"
