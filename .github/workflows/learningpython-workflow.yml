@@ -18,9 +18,13 @@ on:
       - '.github/workflows/python-reusable.yml'
       - '.github/workflows/learningpython-workflow.yml'
   workflow_dispatch:
-
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   call-reusable-workflow:
+    permissions:
+      checks: write
     uses: ./.github/workflows/python-reusable.yml
     with:
       project_path: 'learningpython'
