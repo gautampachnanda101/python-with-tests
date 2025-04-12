@@ -1,6 +1,8 @@
 name: Python Web App CI/CD
 
 permissions:
+  contents: read
+  packages: write
   issues: write
   pull-requests: write
 on:
