@@ -1,5 +1,15 @@
 name: Learning Python CI/CD
-
+permissions:
+  contents: read
+  packages: write
+  issues: write
+  pull-requests: write
+  id-token: write
+  pages: write
+  checks: write
+  actions: write
+  security-events: write
+  deployments: write
 on:
   push:
     branches: [ main ]
