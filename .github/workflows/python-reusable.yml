@@ -257,7 +257,12 @@ jobs:
           exit 1
         fi
         # Check if mkdocs.yml exists in the project path
-        if [ ! -f "${{ inputs.project_path }}/mkdocs.yml" ]; then
+         # Move back to the original directory
+        cd ..
+
+        # Move the documentation to a separate folder
+        mkdir -p docs && \
+        mv site/* docs/       if [ ! -f "${{ inputs.project_path }}/mkdocs.yml" ]; then
           echo "Error: mkdocs.yml not found in '${{ inputs.project_path }}'."
           exit 1
         fi
@@ -285,14 +290,14 @@ jobs:
 
         # Root documentation
         mkdocs build -f mkdocs.yml -d site
-#
-#        # Learning Python documentation
-#        cd learningpython
-#        mkdocs build -f mkdocs.yml -d ../site/learningpython
-#
-#        # Web App documentation
-#        cd ../python-webapp
-#        mkdocs build -f mkdocs.yml -d ../site/python-webapp
+
+        # Learning Python documentation
+        cd learningpython && \
+        mkdocs build -f mkdocs.yml -d ../site/learningpython
+
+        # Web App documentation
+        cd ../python-webapp && \
+        mkdocs build -f mkdocs.yml -d ../site/python-webapp
 
     - name: Archive artifacts
       if: ${{ !inputs.use_docker }}
