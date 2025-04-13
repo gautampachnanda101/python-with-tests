@@ -89,6 +89,20 @@ jobs:
         poetry install
         pip install mkdocs mkdocs-material
 
+    - name: Create MkDocs config
+      working-directory: ./learningpython
+      run: |
+        cat > mkdocs.yml << EOF
+        site_name: Learning Python Documentation
+        theme:
+          name: material
+        nav:
+          - Home: index.md
+        markdown_extensions:
+          - pymdownx.highlight
+          - pymdownx.superfences
+        EOF
+
     - name: Build documentation
       working-directory: ./learningpython
       run: |

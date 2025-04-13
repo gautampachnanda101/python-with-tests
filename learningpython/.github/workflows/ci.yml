@@ -124,15 +124,15 @@ jobs:
         echo "Package would be published to Test PyPI"
 
   deploy-docs:
-    needs: test
+    needs: call-reusable-workflow
     runs-on: ubuntu-latest
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - name: Set up Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: '3.9'
 
@@ -143,6 +143,20 @@ jobs:
         pip install poetry
         poetry install
         pip install mkdocs mkdocs-material
+
+    - name: Create MkDocs config
+      working-directory: ./learningpython
+      run: |
+        cat > mkdocs.yml << EOF
+        site_name: Learning Python Documentation
+        theme:
+          name: material
+        nav:
+          - Home: index.md
+        markdown_extensions:
+          - pymdownx.highlight
+          - pymdownx.superfences
+        EOF
 
     - name: Build documentation
       working-directory: ./learningpython
@@ -159,4 +173,3 @@ jobs:
     - name: Deploy documentation
       run: |
         echo "Documentation would be deployed here"
-        # In a real scenario, you would deploy to GitHub Pages or another hosting service
