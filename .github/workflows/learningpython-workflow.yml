@@ -1,9 +1,17 @@
 name: Learning Python CI/CD
+
 permissions:
+  actions: write
   contents: read
-  packages: write
+  deployments: write
   issues: write
+  packages: write
+  pages: write
   pull-requests: write
+  security-events: write
+  id-token: write
+  checks: write
+
 on:
   push:
     branches: [ main ]
@@ -18,87 +26,16 @@ on:
       - '.github/workflows/python-reusable.yml'
       - '.github/workflows/learningpython-workflow.yml'
   workflow_dispatch:
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+
 jobs:
   call-reusable-workflow:
-    permissions:
-      checks: write
     uses: ./.github/workflows/python-reusable.yml
     with:
       project_path: 'learningpython'
       python_version: '3.9'
-      use_poetry: true
+      use_poetry: false
       use_docker: false
       needs_postgres: false
-      coverage_threshold: 90
-      artifact_name: 'learningpython-dist'
-      artifact_path: 'dist'
-
-  publish:
-    needs: call-reusable-workflow
-    runs-on: ubuntu-latest
-    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
-
-    steps:
-    - uses: actions/checkout@v4
-
-    - name: Download build artifacts
-      uses: actions/download-artifact@v4
-      with:
-        name: learningpython-dist
-        path: dist
-
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.9'
-
-    - name: Install twine
-      run: pip install twine
-
-    - name: Publish to Test PyPI
-      env:
-        TWINE_USERNAME: ${{ secrets.TEST_PYPI_USERNAME }}
-        TWINE_PASSWORD: ${{ secrets.TEST_PYPI_PASSWORD }}
-      run: |
-        echo "Publishing to Test PyPI"
-        # Uncomment the following line to actually publish
-        # twine upload --repository-url https://test.pypi.org/legacy/ dist/*
-        echo "Package would be published to Test PyPI"
-
-  deploy-docs:
-      needs: call-reusable-workflow
-      runs-on: ubuntu-latest
-      if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
-
-      steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.9'
-
-      - name: Install documentation dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install mkdocs mkdocs-material mkdocstrings mkdocstrings-python
-
-      - name: Build root documentation
-        run: mkdocs build -f mkdocs.yml -d ./site
-
-      - name: Build Learning Python documentation
-        working-directory: ./learningpython
-        run: mkdocs build -f mkdocs.yml -d ../site/learningpython
-
-      - name: Build Web App documentation
-        working-directory: ./python-webapp
-        run: mkdocs build -f mkdocs.yml -d ../site/python-webapp
-
-      - name: Deploy documentation
-        uses: peaceiris/actions-gh-pages@v3
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./site
+      coverage_threshold: 80
+      artifact_name: 'learningpython-artifacts'
+      artifact_path: 'src'
