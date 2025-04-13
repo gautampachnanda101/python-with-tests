@@ -1,14 +1,15 @@
 name: Learning Python CI/CD
 
+# Top level permissions
 permissions:
-  contents: write
+  contents: read
   packages: write
   issues: write
   pull-requests: write
   id-token: write
   pages: write
   checks: write
-  actions: read
+  actions: write
   security-events: write
   deployments: write
 
