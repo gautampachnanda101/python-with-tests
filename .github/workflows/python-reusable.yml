@@ -1,9 +1,16 @@
 name: Reusable Python Workflow
 permissions:
+  contents: read
+  packages: write
   issues: write
   pull-requests: write
-  packages: write  # Add this line for ghcr.io access
-  contents: read
+  id-token: write
+  pages: write
+  checks: write
+  actions: write
+  security-events: write
+  deployments: write
+
 on:
   workflow_call:
     inputs:
