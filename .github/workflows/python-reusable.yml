@@ -262,12 +262,32 @@ jobs:
           exit 1
         fi
 
+        # Create docs directories if they don't exist
+        mkdir -p "${{ inputs.project_path }}/docs"
+
+        # Check if mkdocs.yml exists, create if not
+        if [ ! -f "${{ inputs.project_path }}/mkdocs.yml" ]; then
+          echo "site_name: ${{ inputs.project_path }}" > "${{ inputs.project_path }}/mkdocs.yml"
+          echo "theme: material" >> "${{ inputs.project_path }}/mkdocs.yml"
+          echo "plugins:" >> "${{ inputs.project_path }}/mkdocs.yml"
+          echo "  - search" >> "${{ inputs.project_path }}/mkdocs.yml"
+          echo "  - mkdocstrings" >> "${{ inputs.project_path }}/mkdocs.yml"
+        fi
+
         # install documentation dependencies
         python -m pip install --upgrade pip
         pip install mkdocs mkdocs-material mkdocstrings mkdocstrings-python
         pip install mkdocs-git-revision-date-localized-plugin
         pip install mkdocs-git-revision-date-plugin
 
+        # Build documentation
+        cd ${{ inputs.project_path }}
+        mkdocs build -d ../site/${{ inputs.project_path }}
+        # Check if the build was successful
+        if [ $? -ne 0 ]; then
+          echo "Error: mkdocs build failed."
+          exit 1
+        fi
         # Root documentation
         mkdocs build -f mkdocs.yml -d site
 
