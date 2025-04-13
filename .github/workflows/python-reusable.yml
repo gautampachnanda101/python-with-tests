@@ -277,8 +277,7 @@ jobs:
         # install documentation dependencies
         python -m pip install --upgrade pip
         pip install mkdocs mkdocs-material mkdocstrings mkdocstrings-python
-        pip install mkdocs-git-revision-date-localized-plugin
-        pip install mkdocs-git-revision-date-plugin
+
 
         # Build documentation
         cd ${{ inputs.project_path }}
