@@ -29,7 +29,7 @@ on:
 
 jobs:
   call-reusable-workflow:
-    uses: gautampachnanda101/python-with-tests/.github/workflows/python-reusable.yml@a06134a1d71f39e2095261b713b34a3c9e06ff8c
+    uses: .github/workflows/python-reusable.yml@a06134a1d71f39e2095261b713b34a3c9e06ff8c
     with:
       project_path: 'python-webapp'
       python_version: '3.9'
