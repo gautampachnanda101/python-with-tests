@@ -248,7 +248,6 @@ jobs:
         build-args: |
           PYTHON_VERSION=${{ inputs.python_version }}
           USE_POETRY=${{ inputs.use_poetry }}
-
     - name: Build all documentation
       run: |
         # Check if the project path is valid
@@ -256,21 +255,11 @@ jobs:
           echo "Error: Project path '${{ inputs.project_path }}' does not exist."
           exit 1
         fi
-        # Check if mkdocs.yml exists in the project path
-         # Move back to the original directory
-        cd ..
-
-        # Move the documentation to a separate folder
-        mkdir -p docs && \
-        mv site/* docs/       if [ ! -f "${{ inputs.project_path }}/mkdocs.yml" ]; then
-          echo "Error: mkdocs.yml not found in '${{ inputs.project_path }}'."
-          exit 1
-        fi
 
         # Create docs directories if they don't exist
         mkdir -p "${{ inputs.project_path }}/docs"
 
-        # Check if mkdocs.yml exists, create if not
+        # Create base mkdocs.yml if it doesn't exist
         if [ ! -f "${{ inputs.project_path }}/mkdocs.yml" ]; then
           echo "site_name: ${{ inputs.project_path }}" > "${{ inputs.project_path }}/mkdocs.yml"
           echo "theme: material" >> "${{ inputs.project_path }}/mkdocs.yml"
@@ -279,14 +268,29 @@ jobs:
           echo "  - mkdocstrings" >> "${{ inputs.project_path }}/mkdocs.yml"
         fi
 
-        # install documentation dependencies
+        # Install documentation dependencies
         python -m pip install --upgrade pip
-        python --version
         python -m pip install --upgrade \
-                  mkdocs==1.5.3 \
-                  mkdocs-material==9.4.14 \
-                  mkdocstrings==0.24.0 \
-                  mkdocstrings-python==1.7.5
+          mkdocs==1.5.3 \
+          mkdocs-material==9.4.14 \
+          mkdocstrings==0.24.0 \
+          mkdocstrings-python==1.7.5 \
+          mkdocs-autorefs==0.5.0
+
+        # Build documentation for each project
+        cd "${{ inputs.project_path }}"
+        mkdocs build --clean -d ../site/${{ inputs.project_path }}
+
+        # If there are additional projects to build
+        if [ -d "../learningpython" ]; then
+          cd ../learningpython
+          mkdocs build --clean -d ../site/learningpython
+        fi
+
+        if [ -d "../python-webapp" ]; then
+          cd ../python-webapp
+          mkdocs build --clean -d ../site/python-webapp
+        fi
 
         # Root documentation
         mkdocs build -f mkdocs.yml -d site
