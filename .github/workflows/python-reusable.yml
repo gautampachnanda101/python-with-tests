@@ -250,24 +250,8 @@ jobs:
           USE_POETRY=${{ inputs.use_poetry }}
     - name: Build all documentation
       run: |
-        # Check if the project path is valid
-        if [ ! -d "${{ inputs.project_path }}" ]; then
-          echo "Error: Project path '${{ inputs.project_path }}' does not exist."
-          exit 1
-        fi
-
         # Create docs directories if they don't exist
         mkdir -p "${{ inputs.project_path }}/docs"
-
-        # Create base mkdocs.yml if it doesn't exist
-        if [ ! -f "${{ inputs.project_path }}/mkdocs.yml" ]; then
-          echo "site_name: ${{ inputs.project_path }}" > "${{ inputs.project_path }}/mkdocs.yml"
-          echo "theme: material" >> "${{ inputs.project_path }}/mkdocs.yml"
-          echo "plugins:" >> "${{ inputs.project_path }}/mkdocs.yml"
-          echo "  - search" >> "${{ inputs.project_path }}/mkdocs.yml"
-          echo "  - mkdocstrings" >> "${{ inputs.project_path }}/mkdocs.yml"
-        fi
-
         # Install documentation dependencies
         python -m pip install --upgrade pip
         python -m pip install --upgrade \
@@ -281,6 +265,15 @@ jobs:
         for dir in */; do
           if [ -f "${dir}mkdocs.yml" ]; then
             echo "Building documentation for ${dir%/}"
+
+            # Create docs directory and add default content if empty
+            mkdir -p "${dir}docs"
+            if [ ! "$(ls -A ${dir}docs)" ]; then
+              echo "# ${dir%/}" > "${dir}docs/index.md"
+              echo "Documentation for ${dir%/}" >> "${dir}docs/index.md"
+            fi
+
+            # Build docs
             cd "$dir"
             mkdocs build --clean -d ../site/${dir%/}
             cd ..
