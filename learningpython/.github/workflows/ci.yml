@@ -1,18 +1,6 @@
 name: Learning Python CI/CD
 
-# Top level permissions
-permissions:
-  contents: read
-  packages: write
-  issues: write
-  pull-requests: write
-  id-token: write
-  pages: write
-  checks: write
-  actions: write
-  security-events: write
-  deployments: write
-
+# Remove top-level permissions to inherit from caller
 on:
   push:
     branches: [ main ]
@@ -31,13 +19,10 @@ on:
 jobs:
   call-reusable-workflow:
     permissions:
-      contents: write
+      contents: read
       issues: write
       packages: write
       pull-requests: write
-      security-events: write
-      actions: read
-      deployments: write
     uses: ./.github/workflows/python-reusable.yml
     with:
       project_path: 'learningpython'
@@ -48,33 +33,3 @@ jobs:
       coverage_threshold: 90
       artifact_name: 'learningpython-dist'
       artifact_path: 'dist'
-
-  build-docs:
-    needs: call-reusable-workflow
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.9'
-          cache: 'pip'
-
-      - name: Install documentation dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install mkdocs mkdocs-material mkdocstrings mkdocstrings-python
-
-      - name: Build documentation
-        working-directory: ./learningpython
-        run: |
-          echo "Current directory: $(pwd)"
-          echo "Listing files: $(ls -la)"
-          python -m mkdocs build -f mkdocs.yml -d ../site/learningpython
-
-      - name: Upload documentation artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: documentation
-          path: site/

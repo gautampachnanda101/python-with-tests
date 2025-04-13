@@ -1,35 +1,270 @@
-name: Learning Python CI/CD
+name: Reusable Python Workflow
+permissions:
+  contents: read
+  packages: write
+  issues: write
+  pull-requests: write
+  id-token: write
+  pages: write
+  checks: write
+  actions: write
+  security-events: write
+  deployments: write
 
-# Remove top-level permissions to inherit from caller
 on:
-  push:
-    branches: [ main ]
-    paths:
-      - 'learningpython/**'
-      - '.github/workflows/python-reusable.yml'
-      - '.github/workflows/learningpython-workflow.yml'
-  pull_request:
-    branches: [ main ]
-    paths:
-      - 'learningpython/**'
-      - '.github/workflows/python-reusable.yml'
-      - '.github/workflows/learningpython-workflow.yml'
-  workflow_dispatch:
+  workflow_call:
+    inputs:
+      project_path:
+        required: true
+        type: string
+        description: 'Path to the project directory (e.g., learningpython or python-webapp)'
+      python_version:
+        required: false
+        type: string
+        default: '3.9'
+        description: 'Python version to use'
+      use_poetry:
+        required: false
+        type: boolean
+        default: false
+        description: 'Whether to use Poetry for dependency management'
+      use_docker:
+        required: false
+        type: boolean
+        default: false
+        description: 'Whether to build and push a Docker image'
+      needs_postgres:
+        required: false
+        type: boolean
+        default: false
+        description: 'Whether the tests need a PostgreSQL database'
+      coverage_threshold:
+        required: false
+        type: number
+        default: 80
+        description: 'Minimum code coverage threshold'
+      artifact_name:
+        required: false
+        type: string
+        default: 'dist'
+        description: 'Name of the artifact to upload'
+      artifact_path:
+        required: false
+        type: string
+        default: 'dist'
+        description: 'Path to the artifacts to upload'
 
 jobs:
-  call-reusable-workflow:
-    permissions:
-      contents: read
-      issues: write
-      packages: write
-      pull-requests: write
-    uses: ./.github/workflows/python-reusable.yml
-    with:
-      project_path: 'learningpython'
-      python_version: '3.9'
-      use_poetry: true
-      use_docker: false
-      needs_postgres: false
-      coverage_threshold: 90
-      artifact_name: 'learningpython-dist'
-      artifact_path: 'dist'
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:13
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: testdb
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Python ${{ inputs.python_version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ inputs.python_version }}
+
+    - name: Install Poetry
+      if: ${{ inputs.use_poetry }}
+      run: |
+        curl -sSL https://install.python-poetry.org | python3 -
+        echo "$HOME/.poetry/bin" >> $GITHUB_PATH
+
+    - name: Cache Poetry dependencies
+      if: ${{ inputs.use_poetry }}
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pypoetry
+        key: ${{ runner.os }}-poetry-${{ hashFiles('**/poetry.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-poetry-
+
+    - name: Install dependencies with Poetry
+      if: ${{ inputs.use_poetry }}
+      working-directory: ${{ inputs.project_path }}
+      run: poetry install
+
+    - name: Install dependencies with pip
+      if: ${{ !inputs.use_poetry }}
+      working-directory: ${{ inputs.project_path }}
+      run: |
+        python -m pip install --upgrade pip
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+        pip install pytest pytest-cov flake8 black isort
+
+    - name: Lint with flake8
+      working-directory: ${{ inputs.project_path }}
+      run: |
+        if ${{ inputs.use_poetry }}; then
+          poetry run flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+        else
+          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+        fi
+
+    - name: Check formatting with black
+      working-directory: ${{ inputs.project_path }}
+      run: |
+        if ${{ inputs.use_poetry }}; then
+          echo "Running Black formatting check with verbose output..."
+          poetry run black --check --verbose .
+          if [ $? -ne 0 ]; then
+            echo "::warning::Black formatting check failed. Running Black to show what would change:"
+            poetry run black --diff --color .
+            exit 1
+          fi
+        else
+          echo "Running Black formatting check with verbose output..."
+          black --check --verbose .
+          if [ $? -ne 0 ]; then
+            echo "::warning::Black formatting check failed. Running Black to show what would change:"
+            black --diff --color .
+            exit 1
+          fi
+        fi
+
+    - name: Run tests with coverage
+      working-directory: ${{ inputs.project_path }}
+      run: |
+        if ${{ inputs.use_poetry }}; then
+          poetry run pytest --cov --cov-report=xml --cov-fail-under=${{ inputs.coverage_threshold }} | tee ../pytest-output.txt
+        else
+          pytest --cov --cov-report=xml --cov-fail-under=${{ inputs.coverage_threshold }} | tee ../pytest-output.txt
+        fi
+      env:
+        DB_URL: ${{ inputs.needs_postgres && 'postgresql://postgres:postgres@localhost:5432/testdb' || '' }}
+
+    - name: Upload coverage report
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage-report
+        path: ${{ inputs.project_path }}/coverage.xml
+        if-no-files-found: warn
+
+    # Optional: Only enable this if you have a Codecov account set up
+    # - name: Upload coverage to Codecov
+    #   uses: codecov/codecov-action@v3
+    #   with:
+    #     file: ${{ inputs.project_path }}/coverage.xml
+    #     fail_ci_if_error: false
+
+    - name: Generate test summary
+      if: always()
+      run: |
+        echo "### Test Results for ${{ inputs.project_path }} 🧪" >> $GITHUB_STEP_SUMMARY
+        echo "✅ **Passed Tests:** $(grep -o 'PASSED' pytest-output.txt | wc -l | xargs)" >> $GITHUB_STEP_SUMMARY
+        echo "❌ **Failed Tests:** $(grep -o 'FAILED' pytest-output.txt | wc -l | xargs)" >> $GITHUB_STEP_SUMMARY
+        echo "📊 **Coverage:** ${{ inputs.coverage_threshold }}% required" >> $GITHUB_STEP_SUMMARY
+
+    - name: Find Comment
+      if: github.event_name == 'pull_request'
+      uses: peter-evans/find-comment@v2
+      id: fc
+      with:
+        issue-number: ${{ github.event.pull_request.number }}
+        comment-author: 'github-actions[bot]'
+        body-includes: Test Results for ${{ inputs.project_path }}
+
+    - name: Create or update comment
+      if: github.event_name == 'pull_request'
+      uses: peter-evans/create-or-update-comment@v2
+      with:
+        comment-id: ${{ steps.fc.outputs.comment-id }}
+        issue-number: ${{ github.event.pull_request.number }}
+        body: |
+          ## Test Results for ${{ inputs.project_path }} 🧪
+
+          ✅ **Passed Tests:** $(grep -o 'PASSED' pytest-output.txt | wc -l | xargs)
+          ❌ **Failed Tests:** $(grep -o 'FAILED' pytest-output.txt | wc -l | xargs)
+          📊 **Coverage:** ${{ inputs.coverage_threshold }}% required
+
+          *Workflow run: [${{ github.workflow }} #${{ github.run_number }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})*
+        edit-mode: replace
+        comment-author: 'github-actions[bot]'
+        token: ${{ secrets.GITHUB_TOKEN }}
+
+  build:
+    needs: test
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Python
+      if: ${{ !inputs.use_docker }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ inputs.python_version }}
+
+    - name: Install Poetry
+      if: ${{ !inputs.use_docker && inputs.use_poetry }}
+      run: |
+        curl -sSL https://install.python-poetry.org | python3 -
+        echo "$HOME/.poetry/bin" >> $GITHUB_PATH
+
+    - name: Build Python package
+      if: ${{ !inputs.use_docker && inputs.use_poetry }}
+      working-directory: ${{ inputs.project_path }}
+      run: poetry build
+
+    - name: Set up Docker Buildx
+      if: ${{ inputs.use_docker }}
+      uses: docker/setup-buildx-action@v2
+
+    - name: Log in to GitHub Container Registry
+      uses: docker/login-action@v2
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Build and push Docker image
+      if: ${{ inputs.use_docker }}
+      uses: docker/build-push-action@v6
+      with:
+        context: ${{ inputs.project_path }}
+        push: true
+        tags: |
+          ghcr.io/${{ github.repository_owner }}/${{ inputs.project_path }}:latest
+          ghcr.io/${{ github.repository_owner }}/${{ inputs.project_path }}:${{ github.sha }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+        build-args: |
+          PYTHON_VERSION=${{ inputs.python_version }}
+          USE_POETRY=${{ inputs.use_poetry }}
+
+    - name: Build all documentation
+      run: |
+        # Root documentation
+        mkdocs build -f mkdocs.yml -d site
+
+        # Learning Python documentation
+        cd learningpython
+        mkdocs build -f mkdocs.yml -d ../site/learningpython
+
+        # Web App documentation
+        cd ../python-webapp
+        mkdocs build -f mkdocs.yml -d ../site/python-webapp
+
+    - name: Archive artifacts
+      if: ${{ !inputs.use_docker }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ inputs.artifact_name }}
+        path: ${{ inputs.project_path }}/${{ inputs.artifact_path }}
