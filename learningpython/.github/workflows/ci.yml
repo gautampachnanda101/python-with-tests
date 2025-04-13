@@ -1,6 +1,5 @@
 name: Learning Python CI/CD
 
-# Explicitly define required permissions
 permissions:
   contents: write
   packages: write
@@ -48,3 +47,23 @@ jobs:
       coverage_threshold: 90
       artifact_name: 'learningpython-dist'
       artifact_path: 'dist'
+
+  build-docs:
+    needs: call-reusable-workflow
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.9'
+          cache: 'pip'
+
+      - name: Install documentation dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install mkdocs mkdocs-material mkdocstrings mkdocstrings-python
+
+      - name: Build documentation
+        run: mkdocs build
