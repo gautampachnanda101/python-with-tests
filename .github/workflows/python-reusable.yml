@@ -251,6 +251,23 @@ jobs:
 
     - name: Build all documentation
       run: |
+        # Check if the project path is valid
+        if [ ! -d "${{ inputs.project_path }}" ]; then
+          echo "Error: Project path '${{ inputs.project_path }}' does not exist."
+          exit 1
+        fi
+        # Check if mkdocs.yml exists in the project path
+        if [ ! -f "${{ inputs.project_path }}/mkdocs.yml" ]; then
+          echo "Error: mkdocs.yml not found in '${{ inputs.project_path }}'."
+          exit 1
+        fi
+
+        # install documentation dependencies
+        python -m pip install --upgrade pip
+        pip install mkdocs mkdocs-material mkdocstrings mkdocstrings-python
+        pip install mkdocs-git-revision-date-localized-plugin
+        pip install mkdocs-git-revision-date-plugin
+
         # Root documentation
         mkdocs build -f mkdocs.yml -d site
 
