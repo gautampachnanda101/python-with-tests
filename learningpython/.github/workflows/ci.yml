@@ -1,17 +1,42 @@
-name: Python CI
+name: Learning Python CI/CD
+permissions:
+  contents: read
+  packages: write
+  issues: write
+  pull-requests: write
 
 on:
   push:
     branches: [ main ]
     paths:
       - 'learningpython/**'
+      - '.github/workflows/python-reusable.yml'
+      - '.github/workflows/learningpython-workflow.yml'
   pull_request:
     branches: [ main ]
     paths:
       - 'learningpython/**'
+      - '.github/workflows/python-reusable.yml'
+      - '.github/workflows/learningpython-workflow.yml'
   workflow_dispatch:
 
 jobs:
+  call-reusable-workflow:
+    permissions:
+      contents: read
+      issues: write
+      packages: write
+      pull-requests: write
+    uses: ./.github/workflows/python-reusable.yml
+    with:
+      project_path: 'learningpython'
+      python_version: '3.9'
+      use_poetry: true
+      use_docker: false
+      needs_postgres: false
+      coverage_threshold: 90
+      artifact_name: 'learningpython-dist'
+      artifact_path: 'dist'
   test:
     runs-on: ubuntu-latest
     strategy:
