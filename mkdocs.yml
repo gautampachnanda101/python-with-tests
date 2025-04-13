@@ -17,6 +17,17 @@ theme:
     - search.highlight
     - content.code.copy
 
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          paths: [.]
+          options:
+            show_source: true
+  - autorefs:
+      link_titles: true
+
 nav:
   - Home: index.md
   - Python Learning:
