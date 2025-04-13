@@ -66,4 +66,14 @@ jobs:
           pip install mkdocs mkdocs-material mkdocstrings mkdocstrings-python
 
       - name: Build documentation
-        run: mkdocs build
+        working-directory: ./learningpython
+        run: |
+          echo "Current directory: $(pwd)"
+          echo "Listing files: $(ls -la)"
+          python -m mkdocs build -f mkdocs.yml -d ../site/learningpython
+
+      - name: Upload documentation artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: documentation
+          path: site/
