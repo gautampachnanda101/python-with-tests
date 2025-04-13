@@ -1,6 +1,6 @@
 name: Learning Python CI/CD
 
-# Explicitly set top-level permissions
+# Explicitly define required permissions
 permissions:
   contents: write
   packages: write
@@ -9,7 +9,9 @@ permissions:
   id-token: write
   pages: write
   checks: write
-  actions: write
+  actions: read
+  security-events: write
+  deployments: write
 
 on:
   push:
@@ -28,8 +30,14 @@ on:
 
 jobs:
   call-reusable-workflow:
-    # Inherit all permissions from parent
-    permissions: write-all
+    permissions:
+      contents: write
+      issues: write
+      packages: write
+      pull-requests: write
+      security-events: write
+      actions: read
+      deployments: write
     uses: ./.github/workflows/python-reusable.yml
     with:
       project_path: 'learningpython'
