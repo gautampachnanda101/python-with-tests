@@ -1,0 +1,41 @@
+site_name: Project Documentation Hub
+site_description: Documentation for All Projects
+site_author: Gautam Pachnanda
+repo_url: https://github.com/gautampachnanda101/python-with-tests
+repo_name: python-with-tests
+
+theme:
+  name: material
+  palette:
+    primary: blue
+    accent: light blue
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - toc.integrate
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          paths: [.]
+          options:
+            show_source: true
+  - autorefs:
+      link_titles: true
+
+nav:
+  - Home: index.md
+  - Python Learning:
+    - Overview: learningpython/index.md
+    - API Reference: learningpython/api.md
+  - Python Web App:
+    - Overview: python-webapp/index.md
+    - API Reference: python-webapp/api.md
+  - Cross-Project:
+    - Development Guide: development/index.md
+    - Contributing: development/contributing.md

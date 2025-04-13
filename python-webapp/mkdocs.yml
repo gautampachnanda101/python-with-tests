@@ -1,0 +1,36 @@
+site_name: Python Web Application
+site_description: Web Application Documentation
+site_author: Gautam Pachnanda
+repo_url: https://github.com/gautampachnanda101/python-with-tests
+repo_name: python-with-tests
+
+theme:
+  name: material
+  features:
+    - navigation.tabs
+    - content.code.copy
+
+nav:
+  - Home: index.md
+  - API:
+    - Endpoints: api/endpoints.md
+    - Models: api/models.md
+  - Deployment:
+    - Docker: deployment/docker.md
+    - CI/CD: deployment/cicd.md
+
+markdown_extensions:
+  - pymdownx.highlight
+  - pymdownx.superfences
+  - pymdownx.inlinehilite
+  - admonition
+  - pymdownx.details
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          paths: [.]
+          options:
+            show_if_no_docstring: true

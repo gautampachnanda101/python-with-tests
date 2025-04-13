@@ -1,0 +1,35 @@
+site_name: Learning Python Project
+site_description: Python Learning and Testing Project
+site_author: Gautam Pachnanda
+repo_url: https://github.com/gautampachnanda101/python-with-tests
+repo_name: python-with-tests
+
+theme:
+  name: material
+  features:
+    - navigation.tabs
+    - content.code.copy
+
+nav:
+  - Home: index.md
+  - API:
+    - Calculator: api/calculator.md
+  - Testing:
+    - Overview: testing/index.md
+    - Test Cases: testing/cases.md
+
+markdown_extensions:
+  - pymdownx.highlight
+  - pymdownx.superfences
+  - pymdownx.inlinehilite
+  - admonition
+  - pymdownx.details
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          setup_commands:
+            - import sys
+            - sys.path.append('.')

@@ -1,162 +1,41 @@
-name: Python CI
+name: Python WebApp CI/CD
+
+permissions:
+  actions: write
+  checks: write
+  deployments: write
+  pages: write
+  security-events: write
+  id-token: write
+  contents: read
+  packages: write
+  issues: write
+  pull-requests: write
 
 on:
   push:
     branches: [ main ]
     paths:
-      - 'learningpython/**'
+      - 'webapp/**'
+      - '.github/workflows/python-reusable.yml'
+      - '.github/workflows/python-webapp-workflow.yml'
   pull_request:
     branches: [ main ]
     paths:
-      - 'learningpython/**'
+      - 'webapp/**'
+      - '.github/workflows/python-reusable.yml'
+      - '.github/workflows/python-webapp-workflow.yml'
   workflow_dispatch:
 
 jobs:
-  test:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: [3.9, 3.10, 3.11]
-
-    steps:
-    - uses: actions/checkout@v3
-
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v4
-      with:
-        python-version: ${{ matrix.python-version }}
-
-    - name: Install Poetry
-      run: |
-        curl -sSL https://install.python-poetry.org | python3 -
-        echo "$HOME/.poetry/bin" >> $GITHUB_PATH
-
-    - name: Cache Poetry dependencies
-      uses: actions/cache@v3
-      with:
-        path: ~/.cache/pypoetry
-        key: ${{ runner.os }}-poetry-${{ hashFiles('**/poetry.lock') }}
-        restore-keys: |
-          ${{ runner.os }}-poetry-
-
-    - name: Install dependencies
-      working-directory: ./learningpython
-      run: poetry install
-
-    - name: Lint with flake8
-      working-directory: ./learningpython
-      run: poetry run flake8 .
-
-    - name: Check formatting with black
-      working-directory: ./learningpython
-      run: poetry run black --check .
-
-    - name: Check import sorting with isort
-      working-directory: ./learningpython
-      run: poetry run isort --check .
-
-    - name: Test with pytest and coverage
-      working-directory: ./learningpython
-      run: poetry run pytest --cov=org --cov-report=xml --cov-fail-under=90
-
-    - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v3
-      with:
-        file: ./learningpython/coverage.xml
-        fail_ci_if_error: true
-
-  build:
-    needs: test
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v3
-
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.9'
-
-    - name: Install Poetry
-      run: |
-        curl -sSL https://install.python-poetry.org | python3 -
-        echo "$HOME/.poetry/bin" >> $GITHUB_PATH
-
-    - name: Build package
-      working-directory: ./learningpython
-      run: poetry build
-
-    - name: Archive production artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: dist
-        path: learningpython/dist/
-
-  publish:
-    needs: build
-    runs-on: ubuntu-latest
-    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
-
-    steps:
-    - uses: actions/checkout@v3
-
-    - name: Download build artifacts
-      uses: actions/download-artifact@v3
-      with:
-        name: dist
-        path: dist
-
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.9'
-
-    - name: Install twine
-      run: pip install twine
-
-    - name: Publish to Test PyPI
-      env:
-        TWINE_USERNAME: ${{ secrets.TEST_PYPI_USERNAME }}
-        TWINE_PASSWORD: ${{ secrets.TEST_PYPI_PASSWORD }}
-      run: |
-        echo "Publishing to Test PyPI"
-        # Uncomment the following line to actually publish
-        # twine upload --repository-url https://test.pypi.org/legacy/ dist/*
-        echo "Package would be published to Test PyPI"
-
-  deploy-docs:
-    needs: test
-    runs-on: ubuntu-latest
-    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
-
-    steps:
-    - uses: actions/checkout@v3
-
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.9'
-
-    - name: Install dependencies
-      working-directory: ./learningpython
-      run: |
-        python -m pip install --upgrade pip
-        pip install poetry
-        poetry install
-        pip install mkdocs mkdocs-material
-
-    - name: Build documentation
-      working-directory: ./learningpython
-      run: |
-        mkdir -p docs
-        echo "# API Documentation" > docs/index.md
-        echo "This documentation is automatically generated from the codebase." >> docs/index.md
-        echo "## Calculator Module" >> docs/index.md
-        echo '```python' >> docs/index.md
-        cat org/pachnanda/learning/calculator.py >> docs/index.md
-        echo '```' >> docs/index.md
-        mkdocs build
-
-    - name: Deploy documentation
-      run: |
-        echo "Documentation would be deployed here"
-        # In a real scenario, you would deploy to GitHub Pages or another hosting service
+  call-reusable-workflow:
+    uses: ./.github/workflows/python-reusable.yml
+    with:
+      project_path: 'webapp'
+      python_version: '3.9'
+      use_poetry: true
+      use_docker: false
+      needs_postgres: false
+      coverage_threshold: 90
+      artifact_name: 'webapp-dist'
+      artifact_path: 'dist'

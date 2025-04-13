@@ -1,9 +1,16 @@
 name: Reusable Python Workflow
 permissions:
+  contents: read
+  packages: write
   issues: write
   pull-requests: write
-  packages: write  # Add this line for ghcr.io access
-  contents: read
+  id-token: write
+  pages: write
+  checks: write
+  actions: write
+  security-events: write
+  deployments: write
+
 on:
   workflow_call:
     inputs:
@@ -241,6 +248,37 @@ jobs:
         build-args: |
           PYTHON_VERSION=${{ inputs.python_version }}
           USE_POETRY=${{ inputs.use_poetry }}
+    - name: Build all documentation
+      run: |
+        # Create docs directories if they don't exist
+        mkdir -p "${{ inputs.project_path }}/docs"
+        # Install documentation dependencies
+        python -m pip install --upgrade pip
+        python -m pip install --upgrade \
+          mkdocs==1.5.3 \
+          mkdocs-material==9.4.14 \
+          mkdocstrings==0.24.0 \
+          mkdocstrings-python==1.7.5 \
+          mkdocs-autorefs==0.5.0
+
+        # Build documentation for each project
+        for dir in */; do
+          if [ -f "${dir}mkdocs.yml" ]; then
+            echo "Building documentation for ${dir%/}"
+
+            # Create docs directory and add default content if empty
+            mkdir -p "${dir}docs"
+            if [ ! "$(ls -A ${dir}docs)" ]; then
+              echo "# ${dir%/}" > "${dir}docs/index.md"
+              echo "Documentation for ${dir%/}" >> "${dir}docs/index.md"
+            fi
+
+            # Build docs
+            cd "$dir"
+            mkdocs build --clean -d ../site/${dir%/}
+            cd ..
+          fi
+        done
 
     - name: Archive artifacts
       if: ${{ !inputs.use_docker }}
