@@ -278,21 +278,14 @@ jobs:
           mkdocs-autorefs==0.5.0
 
         # Build documentation for each project
-
-        mkdocs build --clean -d site
-
-        # If there are additional projects to build
-        if [ -d "../learningpython" ]; then
-          cd ../learningpython
-          mkdocs build --clean -d ../site/learningpython
-        fi
-
-        if [ -d "../python-webapp" ]; then
-          cd ../python-webapp
-          mkdocs build --clean -d ../site/python-webapp
-        fi
-
-
+        for dir in */; do
+          if [ -f "${dir}mkdocs.yml" ]; then
+            echo "Building documentation for ${dir%/}"
+            cd "$dir"
+            mkdocs build --clean -d ../site/${dir%/}
+            cd ..
+          fi
+        done
 
     - name: Archive artifacts
       if: ${{ !inputs.use_docker }}
