@@ -149,52 +149,36 @@ jobs:
         echo "Package would be published to Test PyPI"
 
   deploy-docs:
-    needs: call-reusable-workflow
-    runs-on: ubuntu-latest
-    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+      needs: call-reusable-workflow
+      runs-on: ubuntu-latest
+      if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
 
-    steps:
-    - uses: actions/checkout@v4
+      steps:
+      - uses: actions/checkout@v4
 
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.9'
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.9'
 
-    - name: Install dependencies
-      working-directory: ./learningpython
-      run: |
-        python -m pip install --upgrade pip
-        pip install poetry
-        poetry install
-        pip install mkdocs mkdocs-material
+      - name: Install documentation dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install mkdocs mkdocs-material mkdocstrings mkdocstrings-python
 
-    - name: Create MkDocs config
-      working-directory: ./learningpython
-      run: |
-        cat > mkdocs.yml << EOF
-        site_name: Learning Python Documentation
-        theme:
-          name: material
-        nav:
-          - Home: index.md
-        markdown_extensions:
-          - pymdownx.highlight
-          - pymdownx.superfences
-        EOF
+      - name: Build root documentation
+        run: mkdocs build -f mkdocs.yml -d ./site
 
-    - name: Build documentation
-      working-directory: ./learningpython
-      run: |
-        mkdir -p docs
-        echo "# API Documentation" > docs/index.md
-        echo "This documentation is automatically generated from the codebase." >> docs/index.md
-        echo "## Calculator Module" >> docs/index.md
-        echo '```python' >> docs/index.md
-        cat org/pachnanda/learning/calculator.py >> docs/index.md
-        echo '```' >> docs/index.md
-        mkdocs build
+      - name: Build Learning Python documentation
+        working-directory: ./learningpython
+        run: mkdocs build -f mkdocs.yml -d ../site/learningpython
 
-    - name: Deploy documentation
-      run: |
-        echo "Documentation would be deployed here"
+      - name: Build Web App documentation
+        working-directory: ./python-webapp
+        run: mkdocs build -f mkdocs.yml -d ../site/python-webapp
+
+      - name: Deploy documentation
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./site
