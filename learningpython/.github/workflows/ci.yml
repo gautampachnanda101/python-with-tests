@@ -1,6 +1,5 @@
 name: Learning Python CI/CD
 
-# Remove top-level permissions to inherit from caller
 on:
   push:
     branches: [ main ]
@@ -17,19 +16,35 @@ on:
   workflow_dispatch:
 
 jobs:
-  call-reusable-workflow:
-    permissions:
-      contents: read
-      issues: write
-      packages: write
-      pull-requests: write
-    uses: ./.github/workflows/python-reusable.yml
-    with:
-      project_path: 'learningpython'
-      python_version: '3.9'
-      use_poetry: true
-      use_docker: false
-      needs_postgres: false
-      coverage_threshold: 90
-      artifact_name: 'learningpython-dist'
-      artifact_path: 'dist'
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.9'
+          cache: 'pip'
+
+      - name: Install dependencies
+        working-directory: learningpython
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run tests
+        working-directory: learningpython
+        run: |
+          python -m pytest tests/ --cov=src --cov-report=xml --cov-fail-under=90
+
+      - name: Build package
+        working-directory: learningpython
+        run: |
+          python -m build
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: learningpython-dist
+          path: learningpython/dist/
